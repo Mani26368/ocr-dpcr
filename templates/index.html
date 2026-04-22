@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCR DPCR — Numérisation automatique</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bleu:    #1B4F8A;
+    --bleu2:   #2563B0;
+    --accent:  #F59E0B;
+    --vert:    #10B981;
+    --rouge:   #EF4444;
+    --bg:      #F0F4FA;
+    --card:    #FFFFFF;
+    --texte:   #1E293B;
+    --gris:    #64748B;
+    --border:  #CBD5E1;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--texte);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #1B4F8A 0%, #2563B0 60%, #1E40AF 100%);
+    padding: 22px 40px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    box-shadow: 0 4px 20px rgba(27,79,138,.35);
+  }
+
+  .logo {
+    width: 52px; height: 52px;
+    background: white;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 17px; color: var(--bleu);
+    letter-spacing: -0.5px; flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+
+  .header-text h1 {
+    color: white; font-size: 20px; font-weight: 700; line-height: 1.2;
+  }
+  .header-text p {
+    color: rgba(255,255,255,.75); font-size: 13px; margin-top: 3px; line-height: 1.4;
+  }
+
+  .header-badge {
+    margin-left: auto;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.25);
+    color: white; font-size: 12px; padding: 5px 12px;
+    border-radius: 20px; font-weight: 600;
+    backdrop-filter: blur(8px);
+  }
+
+  /* ── MAIN ── */
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 20px 60px;
+  }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    color: var(--gris); text-transform: uppercase; margin-bottom: 14px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    border: 1.5px solid var(--border);
+    padding: 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    margin-bottom: 24px;
+    transition: box-shadow .2s;
+  }
+  .card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.1); }
+
+  /* ── UPLOAD ZONE ── */
+  .upload-zone {
+    border: 2.5px dashed var(--border);
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    background: #F8FAFF;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--bleu2);
+    background: #EEF3FF;
+  }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .upload-icon {
+    font-size: 48px; margin-bottom: 14px; display: block;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.1));
+  }
+
+  .upload-zone h2 {
+    font-size: 18px; font-weight: 700; color: var(--texte); margin-bottom: 6px;
+  }
+  .upload-zone p {
+    font-size: 13px; color: var(--gris); margin-bottom: 4px;
+  }
+  .upload-zone .hint {
+    font-size: 12px; color: #94A3B8; margin-top: 8px;
+  }
+
+  /* ── BOUTONS MODE ── */
+  .mode-row {
+    display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap;
+  }
+  .mode-btn {
+    flex: 1; min-width: 140px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: white;
+    color: var(--texte);
+    font-family: 'Sora', sans-serif;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: all .18s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .mode-btn:hover { border-color: var(--bleu2); color: var(--bleu2); background: #EEF3FF; }
+  .mode-btn.active {
+    border-color: var(--bleu); background: var(--bleu); color: white;
+    box-shadow: 0 4px 12px rgba(27,79,138,.3);
+  }
+
+  /* ── APERCU IMAGE ── */
+  #preview-container {
+    display: none; margin-top: 18px;
+    border-radius: 10px; overflow: hidden;
+    border: 1.5px solid var(--border);
+  }
+  #preview-container img {
+    width: 100%; max-height: 280px; object-fit: contain;
+    background: #F8FAFF; display: block;
+  }
+  .preview-bar {
+    padding: 10px 14px;
+    background: #F1F5F9;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; color: var(--gris);
+  }
+  .preview-bar strong { color: var(--texte); font-size: 13px; }
+
+  /* ── BOUTON LANCER ── */
+  #btn-extraire {
+    width: 100%; margin-top: 20px;
+    padding: 16px;
+    background: linear-gradient(135deg, #1B4F8A, #2563B0);
+    color: white; border: none; border-radius: 12px;
+    font-family: 'Sora', sans-serif;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer; letter-spacing: .3px;
+    transition: all .2s;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    box-shadow: 0 4px 16px rgba(27,79,138,.35);
+  }
+  #btn-extraire:hover:not(:disabled) {
+    background: linear-gradient(135deg, #163f6e, #1d4e9a);
+    box-shadow: 0 6px 20px rgba(27,79,138,.45);
+    transform: translateY(-1px);
+  }
+  #btn-extraire:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+  /* ── LOADER ── */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 3px solid rgba(255,255,255,.35);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── RESULTAT ── */
+  #result-card { display: none; }
+
+  .result-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 22px;
+  }
+  .result-badge {
+    padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .8px;
+  }
+  .badge-succes { background: #D1FAE5; color: #065F46; }
+  .badge-erreur { background: #FEE2E2; color: #991B1B; }
+  .result-type {
+    font-size: 13px; color: var(--gris); font-weight: 600;
+  }
+
+  /* Champs */
+  .fields-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; margin-bottom: 20px;
+  }
+  @media (max-width: 500px) { .fields-grid { grid-template-columns: 1fr; } }
+
+  .field {
+    background: #F8FAFF; border-radius: 10px;
+    border: 1.5px solid var(--border);
+    padding: 14px 16px;
+  }
+  .field.full { grid-column: 1 / -1; }
+  .field label {
+    display: block; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--gris); margin-bottom: 5px;
+  }
+  .field .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; font-weight: 600; color: var(--texte);
+  }
+  .field .val.null-val { color: #CBD5E1; font-style: italic; font-weight: 400; }
+
+  /* JSON brut */
+  details { margin-top: 4px; }
+  summary {
+    cursor: pointer; font-size: 12px; color: var(--gris);
+    font-weight: 600; padding: 8px 0;
+    user-select: none; list-style: none;
+    display: flex; align-items: center; gap: 6px;
+  }
+  summary::before { content: "▶"; font-size: 9px; transition: transform .2s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  pre {
+    background: #0F172A; color: #E2E8F0;
+    border-radius: 10px; padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; overflow-x: auto; line-height: 1.7;
+    margin-top: 8px;
+  }
+
+  /* ── STATUS SERVEUR ── */
+  .server-status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--gris);
+  }
+  .dot {
+    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot.ok   { background: var(--vert); box-shadow: 0 0 0 3px rgba(16,185,129,.2); }
+  .dot.err  { background: var(--rouge); }
+  .dot.wait { background: #CBD5E1; }
+
+  /* ── MESSAGE ERREUR ── */
+  .alert-error {
+    background: #FEF2F2; border: 1.5px solid #FECACA;
+    border-radius: 10px; padding: 16px; margin-top: 16px;
+    color: #991B1B; font-size: 13px; display: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">OCR</div>
+  <div class="header-text">
+    <h1>OCR DPCR — Numérisation automatique</h1>
+    <p>Permis de conduire · Certificats d'immatriculation · Extraction JSON instantanée</p>
+  </div>
+  <div class="header-badge" id="server-badge">
+    <span id="server-dot">⏳</span> Connexion…
+  </div>
+</header>
+
+<main>
+
+  <!-- STATUS SERVEUR -->
+  <div class="card" style="padding: 18px 24px;">
+    <div class="server-status">
+      <div class="dot wait" id="status-dot"></div>
+      <span id="status-text">Vérification du serveur…</span>
+    </div>
+  </div>
+
+  <!-- UPLOAD -->
+  <p class="section-label">Importez votre document</p>
+  <div class="card">
+
+    <div class="upload-zone" id="drop-zone">
+      <input type="file" id="file-input" accept="image/*">
+      <span class="upload-icon">🪪</span>
+      <h2>Déposez votre image ici</h2>
+      <p>Photo JPG / PNG d'un permis ou d'une carte grise</p>
+      <p class="hint">Glisser-déposer ou cliquer pour choisir · Max 20 Mo</p>
+    </div>
+
+    <!-- Aperçu -->
+    <div id="preview-container">
+      <img id="preview-img" src="" alt="Aperçu">
+      <div class="preview-bar">
+        <strong id="preview-name">—</strong>
+        <span id="preview-size">—</span>
+      </div>
+    </div>
+
+    <!-- Mode -->
+    <div class="mode-row">
+      <button class="mode-btn" data-mode="auto" onclick="setMode(this)">🔍 Détection auto</button>
+      <button class="mode-btn active" data-mode="permis" onclick="setMode(this)">🪪 Permis de conduire</button>
+      <button class="mode-btn" data-mode="carte-grise" onclick="setMode(this)">🚗 Carte grise</button>
+    </div>
+
+    <!-- Bouton -->
+    <button id="btn-extraire" onclick="extraire()" disabled>
+      <div class="spinner" id="spinner"></div>
+      <span id="btn-text">📤 Lancer l'extraction</span>
+    </button>
+
+    <!-- Erreur -->
+    <div class="alert-error" id="alert-error"></div>
+  </div>
+
+  <!-- RÉSULTAT -->
+  <div class="card" id="result-card">
+    <div class="result-header">
+      <div class="result-badge" id="result-badge">—</div>
+      <div class="result-type" id="result-type">—</div>
+    </div>
+
+    <div class="fields-grid" id="fields-grid"></div>
+
+    <details>
+      <summary>JSON brut</summary>
+      <pre id="json-raw"></pre>
+    </details>
+  </div>
+
+</main>
+
+<script>
+  let selectedMode = "permis";
+  const BASE = "";   // même origine
+
+  // ── Status serveur ────────────────────────────────────────────────────────
+  async function checkHealth() {
+    try {
+      const r = await fetch(`${BASE}/health`);
+      const d = await r.json();
+      document.getElementById("status-dot").className  = "dot ok";
+      document.getElementById("status-text").textContent = `Serveur en ligne · FastAPI v${d.version} · Groq ${d.groq}`;
+      document.getElementById("server-badge").innerHTML = "✅ En ligne";
+    } catch {
+      document.getElementById("status-dot").className  = "dot err";
+      document.getElementById("status-text").textContent = "Serveur inaccessible — vérifiez que python api.py tourne";
+      document.getElementById("server-badge").innerHTML = "❌ Hors ligne";
+    }
+  }
+  checkHealth();
+
+  // ── Mode ──────────────────────────────────────────────────────────────────
+  function setMode(btn) {
+    document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedMode = btn.dataset.mode;
+  }
+
+  // ── Upload + aperçu ───────────────────────────────────────────────────────
+  const fileInput   = document.getElementById("file-input");
+  const dropZone    = document.getElementById("drop-zone");
+  const btnExtraire = document.getElementById("btn-extraire");
+
+  fileInput.addEventListener("change", () => { if (fileInput.files[0]) showPreview(fileInput.files[0]); });
+
+  dropZone.addEventListener("dragover",  e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+  dropZone.addEventListener("dragleave", ()  => dropZone.classList.remove("dragover"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault(); dropZone.classList.remove("dragover");
+    const f = e.dataTransfer.files[0];
+    if (f) { fileInput.files = e.dataTransfer.files; showPreview(f); }
+  });
+
+  function showPreview(file) {
+    const url = URL.createObjectURL(file);
+    document.getElementById("preview-img").src = url;
+    document.getElementById("preview-name").textContent = file.name;
+    document.getElementById("preview-size").textContent = (file.size / 1024).toFixed(0) + " Ko";
+    document.getElementById("preview-container").style.display = "block";
+    btnExtraire.disabled = false;
+    document.getElementById("result-card").style.display = "none";
+    document.getElementById("alert-error").style.display = "none";
+  }
+
+  // ── Extraction ────────────────────────────────────────────────────────────
+  async function extraire() {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    // Loading
+    btnExtraire.disabled = true;
+    document.getElementById("spinner").style.display = "block";
+    document.getElementById("btn-text").textContent  = "Extraction en cours…";
+    document.getElementById("result-card").style.display = "none";
+    document.getElementById("alert-error").style.display = "none";
+
+    const endpoint = selectedMode === "auto" ? "/extraire"
+                   : selectedMode === "permis" ? "/extraire/permis"
+                   : "/extraire/carte-grise";
+
+    try {
+      const form = new FormData();
+      form.append("image", file);
+      const r = await fetch(`${BASE}${endpoint}`, { method: "POST", body: form });
+      const data = await r.json();
+      afficherResultat(data);
+    } catch (e) {
+      showError("Erreur réseau : impossible de joindre l'API. Vérifiez que le serveur tourne.");
+    } finally {
+      btnExtraire.disabled = false;
+      document.getElementById("spinner").style.display = "none";
+      document.getElementById("btn-text").textContent  = "📤 Lancer l'extraction";
+    }
+  }
+
+  // ── Affichage résultat ────────────────────────────────────────────────────
+  const LABELS = {
+    nom:              "Nom complet",
+    date_naissance:   "Date de naissance",
+    lieu_naissance:   "Lieu de naissance",
+    domicile:         "Domicile",
+    numero_permis:    "N° Permis",
+    categorie:        "Catégorie",
+    immatriculation:  "Immatriculation",
+    date_mise_en_circ:"Mise en circulation",
+    marque:           "Marque",
+    puissance:        "Puissance",
+  };
+
+  const TYPES = { permis: "🪪 Permis de conduire", carte_grise: "🚗 Certificat d'immatriculation" };
+
+  function afficherResultat(data) {
+    const card   = document.getElementById("result-card");
+    const badge  = document.getElementById("result-badge");
+    const type   = document.getElementById("result-type");
+    const grid   = document.getElementById("fields-grid");
+    const raw    = document.getElementById("json-raw");
+
+    // Badge succes / erreur
+    if (data.succes) {
+      badge.className = "result-badge badge-succes";
+      badge.textContent = "✓ Extraction réussie";
+    } else {
+      badge.className = "result-badge badge-erreur";
+      badge.textContent = "✗ Échec";
+    }
+
+    type.textContent = TYPES[data.type_document] || data.type_document || "—";
+
+    // Champs
+    grid.innerHTML = "";
+    const SKIP = ["succes","erreur","type_document"];
+    for (const [key, label] of Object.entries(LABELS)) {
+      if (!(key in data)) continue;
+      const val = data[key];
+      const full = ["nom","domicile"].includes(key) ? " full" : "";
+      grid.innerHTML += `
+        <div class="field${full}">
+          <label>${label}</label>
+          <div class="val ${val === null ? 'null-val' : ''}">${val !== null ? val : "non détecté"}</div>
+        </div>`;
+    }
+
+    // Message erreur pipeline
+    if (data.erreur) {
+      grid.innerHTML += `<div class="field full">
+        <label>Message d'erreur</label>
+        <div class="val null-val">${data.erreur}</div>
+      </div>`;
+    }
+
+    raw.textContent = JSON.stringify(data, null, 2);
+    card.style.display = "block";
+    card.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("alert-error");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+</script>
+</body>
+</html>
